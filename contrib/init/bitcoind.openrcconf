@@ -1,0 +1,33 @@
+# /etc/conf.d/UFOd: config file for /etc/init.d/UFOd
+
+# Config file location
+#UFOD_CONFIGFILE="/etc/UFO/UFO.conf"
+
+# What directory to write pidfile to?  (created and owned by $UFOD_USER)
+#UFOD_PIDDIR="/var/run/UFOd"
+
+# What filename to give the pidfile
+#UFOD_PIDFILE="${UFOD_PIDDIR}/UFOd.pid"
+
+# Where to write UFOd data (be mindful that the blockchain is large)
+#UFOD_DATADIR="/var/lib/UFOd"
+
+# User and group to own UFOd process
+#UFOD_USER="UFO"
+#UFOD_GROUP="UFO"
+
+# Path to UFOd executable
+#UFOD_BIN="/usr/bin/UFOd"
+
+# Nice value to run UFOd under
+#UFOD_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+#UFOD_OPTS=""
+
+# The timeout in seconds OpenRC will wait for UFOd to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+UFOD_SIGTERM_TIMEOUT=600

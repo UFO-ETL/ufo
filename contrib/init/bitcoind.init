@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+#  UFOd The UFO core server.
+#
+#
+# chkconfig: 345 80 20
+# description: UFOd
+# processname: UFOd
+#
+
+# Source function library.
+. /etc/init.d/functions
+
+# you can override defaults in /etc/sysconfig/UFOd, see below
+if [ -f /etc/sysconfig/UFOd ]; then
+        . /etc/sysconfig/UFOd
+fi
+
+RETVAL=0
+
+prog=UFOd
+# you can override the lockfile via UFOD_LOCKFILE in /etc/sysconfig/UFOd
+lockfile=${UFOD_LOCKFILE-/var/lock/subsys/UFOd}
+
+# UFOd defaults to /usr/bin/UFOd, override with UFOD_BIN
+UFOd=${UFOD_BIN-/usr/bin/UFOd}
+
+# UFOd opts default to -disablewallet, override with UFOD_OPTS
+UFOd_opts=${UFOD_OPTS--disablewallet}
+
+start() {
+    echo -n $"Starting $prog: "
+    daemon $DAEMONOPTS $UFOd $UFOd_opts
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && touch $lockfile
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc $prog -t600
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && rm -f $lockfile
+    return $RETVAL
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status $prog
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: service $prog {start|stop|status|restart}"
+        exit 1
+        ;;
+esac

@@ -1,0 +1,92 @@
+#!/sbin/openrc-run
+
+# backward compatibility for existing gentoo layout
+#
+if [ -d "/var/lib/UFO/.UFO" ]; then
+	UFOD_DEFAULT_DATADIR="/var/lib/UFO/.UFO"
+else
+	UFOD_DEFAULT_DATADIR="/var/lib/UFOd"
+fi
+
+UFOD_CONFIGFILE=${UFOD_CONFIGFILE:-/etc/UFO/UFO.conf}
+UFOD_PIDDIR=${UFOD_PIDDIR:-/var/run/UFOd}
+UFOD_PIDFILE=${UFOD_PIDFILE:-${UFOD_PIDDIR}/UFOd.pid}
+UFOD_DATADIR=${UFOD_DATADIR:-${UFOD_DEFAULT_DATADIR}}
+UFOD_USER=${UFOD_USER:-${UFO_USER:-UFO}}
+UFOD_GROUP=${UFOD_GROUP:-UFO}
+UFOD_BIN=${UFOD_BIN:-/usr/bin/UFOd}
+UFOD_NICE=${UFOD_NICE:-${NICELEVEL:-0}}
+UFOD_OPTS="${UFOD_OPTS:-${UFO_OPTS}}"
+
+name="UFO Core Daemon"
+description="UFO cryptocurrency P2P network daemon"
+
+command="/usr/bin/UFOd"
+command_args="-pid=\"${UFOD_PIDFILE}\" \
+		-conf=\"${UFOD_CONFIGFILE}\" \
+		-datadir=\"${UFOD_DATADIR}\" \
+		-daemon \
+		${UFOD_OPTS}"
+
+required_files="${UFOD_CONFIGFILE}"
+start_stop_daemon_args="-u ${UFOD_USER} \
+			-N ${UFOD_NICE} -w 2000"
+pidfile="${UFOD_PIDFILE}"
+
+# The retry schedule to use when stopping the daemon. Could be either
+# a timeout in seconds or multiple signal/timeout pairs (like
+# "SIGKILL/180 SIGTERM/300")
+retry="${UFOD_SIGTERM_TIMEOUT}"
+
+depend() {
+	need localmount net
+}
+
+# verify
+# 1) that the datadir exists and is writable (or create it)
+# 2) that a directory for the pid exists and is writable
+# 3) ownership and permissions on the config file
+start_pre() {
+	checkpath \
+	-d \
+	--mode 0750 \
+	--owner "${UFOD_USER}:${UFOD_GROUP}" \
+	"${UFOD_DATADIR}"
+
+	checkpath \
+	-d \
+	--mode 0755 \
+	--owner "${UFOD_USER}:${UFOD_GROUP}" \
+	"${UFOD_PIDDIR}"
+
+	checkpath -f \
+	-o ${UFOD_USER}:${UFOD_GROUP} \
+	-m 0660 \
+	${UFOD_CONFIGFILE}
+
+	checkconfig || return 1
+}
+
+checkconfig()
+{
+	if ! grep -qs '^rpcpassword=' "${UFOD_CONFIGFILE}" ; then
+		eerror ""
+		eerror "ERROR: You must set a secure rpcpassword to run UFOd."
+		eerror "The setting must appear in ${UFOD_CONFIGFILE}"
+		eerror ""
+		eerror "This password is security critical to securing wallets "
+		eerror "and must not be the same as the rpcuser setting."
+		eerror "You can generate a suitable random password using the following "
+		eerror "command from the shell:"
+		eerror ""
+		eerror "bash -c 'tr -dc a-zA-Z0-9 < /dev/urandom | head -c32 && echo'"
+		eerror ""
+		eerror "It is recommended that you also set alertnotify so you are "
+		eerror "notified of problems:"
+		eerror ""
+		eerror "ie: alertnotify=echo %%s | mail -s \"UFO Alert\"" \
+			"admin@foo.com"
+		eerror ""
+		return 1
+	fi
+}
